@@ -1,4 +1,5 @@
 <?php
+// ARQUIVO: app/Models/Especie.php
 
 namespace App\Models;
 
@@ -9,16 +10,22 @@ class Especie extends Model
 {
     use HasFactory;
 
+    protected $fillable = ['nome'];
+
     /**
-     * Os atributos que podem ser atribuídos em massa.
-     *
-     * @var array<int, string>
+     * Uma Espécie pode ter várias Raças.
      */
-    protected $fillable = [
-        'nome', // <-- ADICIONE ESTA LINHA
-    ];
     public function racas()
     {
         return $this->hasMany(Raca::class);
+    }
+
+    /**
+     * Uma Espécie pode ter vários Animais.
+     * ADICIONE ESTE NOVO MÉTODO
+     */
+    public function animais()
+    {
+        return $this->hasMany(Animal::class);
     }
 }

@@ -28,10 +28,22 @@ class Animal extends Model
 
     /**
      * Um Animal pertence a uma Raça.
-     * ADICIONE ESTE MÉTODO
      */
     public function raca()
     {
         return $this->belongsTo(Raca::class);
+    }
+
+       public function lotes()
+    {
+        return $this->belongsToMany(Lote::class, 'animal_lote');
+    }
+
+    /**
+     * Um animal pode ter várias movimentações (histórico).
+     */
+    public function movimentacoes()
+    {
+        return $this->hasMany(Movimentacao::class)->orderBy('data', 'desc');
     }
 }

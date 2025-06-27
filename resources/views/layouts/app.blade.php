@@ -35,6 +35,39 @@
             <main>
                 {{ $slot }}
             </main>
+            {{--
+    ARQUIVO: resources/views/layouts/app.blade.php
+    INSTRUÇÃO: Cole este código antes do fechamento da tag </body> no final do arquivo.
+--}}
+
+        {{-- ... O restante do seu arquivo app.blade.php ... --}}
+        </main>
+    </div>
+
+    @livewireScripts
+
+    {{-- NOVO RODAPÉ --}}
+    <footer class="bg-white shadow mt-auto">
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500">
+            ArcaIF &copy; {{ date('Y') }} -
+            @php
+                try {
+                    // Executa o comando git para pegar a última tag
+                    $gitVersion = trim(shell_exec('git describe --tags --abbrev=0'));
+                    if ($gitVersion) {
+                        echo "Versão: " . htmlspecialchars($gitVersion);
+                    } else {
+                        echo "Versão: dev";
+                    }
+                } catch (\Exception $e) {
+                    echo "Versão: dev";
+                }
+            @endphp
+        </div>
+    </footer>
+</body>
+</html>
+
         </div>
     </body>
 </html>
