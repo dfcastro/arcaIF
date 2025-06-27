@@ -1,47 +1,39 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
- <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+<head>
+    {{-- ... outros meta e links ... --}}
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-
-    <!-- ADICIONE ESTA LINHA -->
+    {{-- Font Awesome --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
-    <!-- Scripts -->
+    {{-- NOVO SCRIPT DO CHART.JS --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    {{-- Scripts do Vite e Livewire --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
-            <livewire:layout.navigation />
 
-            <!-- Page Heading -->
-            @if (isset($header))
-                <header class="bg-white shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
-                    </div>
-                </header>
-            @endif
+<body class="font-sans antialiased">
+    <div class="min-h-screen bg-gray-100">
+        <livewire:layout.navigation />
 
-            <!-- Page Content -->
-            <main>
-                {{ $slot }}
-            </main>
-            {{--
-    ARQUIVO: resources/views/layouts/app.blade.php
-    INSTRUÇÃO: Cole este código antes do fechamento da tag </body> no final do arquivo.
---}}
+        <!-- Page Heading -->
+        @if (isset($header))
+            <header class="bg-white shadow">
+                <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                    {{ $header }}
+                </div>
+            </header>
+        @endif
 
-        {{-- ... O restante do seu arquivo app.blade.php ... --}}
+        <!-- Page Content -->
+        <main>
+            {{ $slot }}
         </main>
+   
+        
     </div>
 
     @livewireScripts
@@ -55,19 +47,21 @@
                     // Executa o comando git para pegar a última tag
                     $gitVersion = trim(shell_exec('git describe --tags --abbrev=0'));
                     if ($gitVersion) {
-                        echo "Versão: " . htmlspecialchars($gitVersion);
+                        echo 'Versão: ' . htmlspecialchars($gitVersion);
                     } else {
-                        echo "Versão: dev";
+                        echo 'Versão: dev';
                     }
                 } catch (\Exception $e) {
-                    echo "Versão: dev";
+                    echo 'Versão: dev';
                 }
             @endphp
         </div>
     </footer>
 </body>
+
 </html>
 
-        </div>
-    </body>
+</div>
+</body>
+
 </html>

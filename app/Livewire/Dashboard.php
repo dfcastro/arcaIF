@@ -7,6 +7,7 @@ use Livewire\Component;
 use App\Models\Animal;
 use App\Models\Especie;
 use App\Models\Raca;
+use Livewire\Attributes\On; // Importar o atributo On
 
 class Dashboard extends Component
 {
@@ -14,22 +15,44 @@ class Dashboard extends Component
     public $totalEspecies;
     public $totalRacas;
     public $animaisPorEspecie;
+    public $chartData; // Nova propriedade para os dados do gráfico
 
     /**
      * O método mount é executado quando o componente é inicializado.
-     * É um bom lugar para carregar os dados que não mudam com frequência.
      */
     public function mount()
+    {
+        $this->carregarDados();
+    }
+
+    /**
+     * Adiciona um listener para o evento 'animal-updated'.
+     * Quando um animal for criado/editado/removido, este método será chamado para atualizar o dashboard.
+     */
+    #[On('animal-updated')]
+    public function carregarDados()
     {
         $this->totalAnimaisAtivos = Animal::where('status', 'Ativo')->count();
         $this->totalEspecies = Especie::count();
         $this->totalRacas = Raca::count();
         
-        // Carrega as espécies junto com a contagem de animais ativos para cada uma
         $this->animaisPorEspecie = Especie::withCount(['animais' => function ($query) {
             $query->where('status', 'Ativo');
         }])->get();
+
+        // Prepara os dados para o gráfico
+        $labels = $this->animaisPorEspecie->pluck('nome');
+        $data = $this->animaisPorEspecie->pluck('animais_count');
+
+        $this->chartData = [
+            'labels' => $labels,
+            'data' => $data,
+        ];
+
+        // Envia um evento para o browser para atualizar o gráfico
+        $this->dispatch('update-chart', data: $this->chartData);
     }
+
 
     public function render()
     {

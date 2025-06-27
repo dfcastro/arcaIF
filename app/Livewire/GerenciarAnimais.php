@@ -42,7 +42,7 @@ class GerenciarAnimais extends Component
             'observacoes' => 'nullable|string',
         ];
     }
-    
+
     // Este método é chamado automaticamente quando $especie_id muda.
     public function updatedEspecieId($value)
     {
@@ -54,13 +54,19 @@ class GerenciarAnimais extends Component
     private function resetInput()
     {
         $this->reset([
-            'animalId', 'especie_id', 'raca_id', 'identificacao',
-            'data_nascimento', 'sexo', 'observacoes', 'status'
+            'animalId',
+            'especie_id',
+            'raca_id',
+            'identificacao',
+            'data_nascimento',
+            'sexo',
+            'observacoes',
+            'status'
         ]);
         $this->racas = []; // Limpa a lista de raças
         $this->status = 'Ativo';
     }
-    
+
     // ===============================================
     // MÉTODOS QUE ESTAVAM FALTANDO
     // ===============================================
@@ -91,10 +97,10 @@ class GerenciarAnimais extends Component
         ]);
 
         session()->flash('sucesso', $this->animalId ? 'Animal atualizado com sucesso!' : 'Animal cadastrado com sucesso!');
-
+        $this->dispatch('animal-updated');
         $this->fecharModal();
     }
-    
+
     public function editar($id)
     {
         $animal = Animal::findOrFail($id);
@@ -103,7 +109,7 @@ class GerenciarAnimais extends Component
 
         // Carrega as raças da espécie do animal que está sendo editado
         $this->racas = Raca::where('especie_id', $this->especie_id)->get();
-        
+
         $this->raca_id = $animal->raca_id;
         $this->identificacao = $animal->identificacao;
         $this->data_nascimento = $animal->data_nascimento;
@@ -118,12 +124,13 @@ class GerenciarAnimais extends Component
     {
         Animal::find($id)->delete();
         session()->flash('sucesso', 'Animal removido com sucesso!');
+        $this->dispatch('animal-updated'); 
     }
 
     public function render()
     {
         $especies = Especie::orderBy('nome')->get();
-        
+
         $query = Animal::with(['especie', 'raca'])->latest();
 
         if ($this->termoBusca) {

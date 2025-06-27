@@ -11,7 +11,7 @@
             
             {{-- Grid de Estatísticas --}}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                
+                {{-- ... Cards de estatísticas (permanecem iguais) ... --}}
                 <!-- Card Total de Animais Ativos -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 flex items-center">
@@ -50,26 +50,80 @@
                         </div>
                     </div>
                 </div>
-
             </div>
 
-            {{-- Card de Resumo por Espécie --}}
-            <div class="mt-8 bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <h3 class="text-lg font-medium leading-6 text-gray-900">Resumo do Rebanho</h3>
-                    <div class="mt-4 border-t border-gray-200">
-                        <dl class="divide-y divide-gray-200">
-                            @forelse ($animaisPorEspecie as $especie)
-                                <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
-                                    <dt class="text-sm font-medium text-gray-500">{{ $especie->nome }}</dt>
-                                    <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 font-bold">{{ $especie->animais_count }} animais</dd>
-                                </div>
-                            @empty
-                                <div class="py-4 text-sm text-gray-500 text-center">
-                                    Ainda não há animais cadastrados para exibir um resumo.
-                                </div>
-                            @endforelse
-                        </dl>
+            {{-- NOVA LINHA COM O GRÁFICO E O RESUMO --}}
+            <div class="mt-8 grid grid-cols-1 lg:grid-cols-5 gap-8">
+                
+                {{-- Card do Gráfico --}}
+                <div class="lg:col-span-2 bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6">
+                         <h3 class="text-lg font-medium leading-6 text-gray-900">Distribuição por Espécie</h3>
+                         {{-- ÁREA DO GRÁFICO CORRIGIDA --}}
+                         <div
+                            wire:ignore
+                            x-data="{
+                                chart: null,
+                                chartData: {{ json_encode($chartData) }},
+                                initChart() {
+                                    if (this.chart) {
+                                        this.chart.destroy();
+                                    }
+                                    const ctx = this.$refs.canvas.getContext('2d');
+                                    this.chart = new Chart(ctx, {
+                                        type: 'doughnut',
+                                        data: {
+                                            labels: this.chartData.labels,
+                                            datasets: [{
+                                                label: 'Nº de Animais',
+                                                data: this.chartData.data,
+                                                backgroundColor: [
+                                                    'rgba(79, 70, 229, 0.8)',
+                                                    'rgba(34, 197, 94, 0.8)',
+                                                    'rgba(234, 179, 8, 0.8)',
+                                                    'rgba(239, 68, 68, 0.8)',
+                                                    'rgba(59, 130, 246, 0.8)'
+                                                ],
+                                                hoverOffset: 4
+                                            }]
+                                        },
+                                        options: { responsive: true, maintainAspectRatio: false }
+                                    });
+                                }
+                            }"
+                            x-init="
+                                initChart();
+                                $wire.on('update-chart', ({ data }) => {
+                                    chartData = data;
+                                    initChart();
+                                });
+                            "
+                            class="mt-4 h-64"
+                         >
+                            <canvas x-ref="canvas"></canvas>
+                         </div>
+                    </div>
+                </div>
+
+                {{-- Card de Resumo por Espécie --}}
+                <div class="lg:col-span-3 bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900">Resumo do Rebanho</h3>
+                        <div class="mt-4 border-t border-gray-200">
+                            <dl class="divide-y divide-gray-200">
+                                @forelse ($animaisPorEspecie as $especie)
+                                    <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
+                                        <dt class="text-sm font-medium text-gray-500">{{ $especie->nome }}</dt>
+                                        {{-- LINHA MODIFICADA --}}
+                                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 font-bold">{{ $especie->animais_count }} {{ \Illuminate\Support\Str::plural('animal', $especie->animais_count) }}</dd>
+                                    </div>
+                                @empty
+                                    <div class="py-4 text-sm text-gray-500 text-center">
+                                        Ainda não há animais cadastrados para exibir um resumo.
+                                    </div>
+                                @endforelse
+                            </dl>
+                        </div>
                     </div>
                 </div>
             </div>

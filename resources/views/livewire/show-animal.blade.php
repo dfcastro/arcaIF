@@ -14,12 +14,14 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {{-- Coluna da Esquerda: Dados do Animal --}}
-            <div class="lg:col-span-1">
-                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+            {{-- Coluna da Esquerda: Dados do Animal e Gráfico --}}
+            <div class="lg:col-span-1 space-y-8">
+                {{-- Card de Dados Cadastrais --}}
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">
-                        <h3 class="text-lg font-medium leading-6 text-gray-900">Dados Cadastrais</h3>
+                        <h3 class="text-lg font-medium leading-6">Dados Cadastrais</h3>
                         <div class="mt-4 border-t border-gray-200">
+                           {{-- ... (código dos dados cadastrais permanece o mesmo) ... --}}
                             <dl>
                                 <div class="bg-gray-50 px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                                     <dt class="text-sm font-medium text-gray-500">Espécie</dt>
@@ -55,6 +57,47 @@
                         </div>
                     </div>
                 </div>
+                
+                {{-- Card do Gráfico de Pesagem --}}
+                @if(!empty($pesagemChartData['labels']) && count($pesagemChartData['labels']) > 1)
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6 text-gray-900"
+                        x-data="{
+                            chart: null,
+                            initChart(chartData) {
+                                if (this.chart) {
+                                    this.chart.destroy();
+                                }
+                                const ctx = this.$refs.canvas.getContext('2d');
+                                this.chart = new Chart(ctx, {
+                                    type: 'line',
+                                    data: {
+                                        labels: chartData.labels,
+                                        datasets: [{
+                                            label: 'Evolução do Peso',
+                                            data: chartData.data,
+                                            borderColor: 'rgba(79, 70, 229, 0.8)',
+                                            backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                                            fill: true,
+                                            tension: 0.1
+                                        }]
+                                    },
+                                    options: {
+                                        scales: {
+                                            y: { beginAtZero: false }
+                                        }
+                                    }
+                                });
+                            }
+                        }"
+                        x-init="initChart({{ json_encode($pesagemChartData) }})"
+                        @update-pesagem-chart.window="initChart($event.detail.data)"
+                    >
+                        <h3 class="text-lg font-medium leading-6">Evolução de Peso</h3>
+                        <div class="mt-4 h-64"><canvas x-ref="canvas"></canvas></div>
+                    </div>
+                </div>
+                @endif
             </div>
 
             {{-- Coluna da Direita: Histórico de Movimentações com ABAS --}}
@@ -88,16 +131,36 @@
                                     @error('tipo') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                                 </div>
                             </div>
+                            
+                            @if ($tipo === 'Pesagem')
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div class="sm:col-span-2">
+                                        <label for="valor" class="block text-sm font-medium text-gray-700">Peso</label>
+                                        <input type="number" step="any" wire:model="valor" id="valor" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Ex: 85.5">
+                                    </div>
+                                    <div>
+                                        <label for="unidade" class="block text-sm font-medium text-gray-700">Unidade</label>
+                                        <select wire:model="unidade" id="unidade" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                            <option>Kg</option>
+                                            <option>@</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                @error('valor') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                            @else
+                                <div>
+                                    <label for="valor" class="block text-sm font-medium text-gray-700">Valor (Opcional)</label>
+                                    <input type="text" wire:model="valor" id="valor" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Ex: nome da vacina, R$ 2.500,00">
+                                    @error('valor') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                                </div>
+                            @endif
+
                             <div>
                                 <label for="descricao" class="block text-sm font-medium text-gray-700">Descrição</label>
                                 <textarea wire:model="descricao" id="descricao" rows="2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Descreva o evento..."></textarea>
                                 @error('descricao') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                             </div>
-                            <div>
-                                <label for="valor" class="block text-sm font-medium text-gray-700">Valor (Opcional)</label>
-                                <input type="text" wire:model="valor" id="valor" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Ex: 520 kg, nome da vacina, R$ 2.500,00">
-                                @error('valor') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
-                            </div>
+
                             <div class="text-right">
                                 <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
                                     Registar Evento
@@ -105,8 +168,8 @@
                             </div>
                         </form>
 
-                        {{-- NOVA SEÇÃO DE ABAS --}}
-                        <div class="mt-6 border-t border-gray-200 pt-6">
+                        {{-- SEÇÃO DE ABAS --}}
+                         <div class="mt-6 border-t border-gray-200 pt-6">
                              <h3 class="text-lg font-medium leading-6 text-gray-900">Eventos Registados</h3>
                              <div class="mt-4">
                                 <div class="sm:hidden">
@@ -140,12 +203,7 @@
                             {{-- LINHA DO TEMPO --}}
                             <div class="mt-6 flow-root">
                                <ul role="list" class="-mb-8">
-                                    @php
-                                        // Filtra a coleção de movimentações com base na aba ativa
-                                        $movimentacoesFiltradas = $activeTab == 'Todos'
-                                            ? $animal->movimentacoes
-                                            : $animal->movimentacoes->where('tipo', $activeTab);
-                                    @endphp
+                                    {{-- O bloco @php FOI REMOVIDO e a variável $movimentacoesFiltradas é usada diretamente --}}
                                     @forelse ($movimentacoesFiltradas as $movimentacao)
                                         <li>
                                             <div class="relative pb-8">
@@ -208,7 +266,7 @@
                                 </div>
                                 <div>
                                     <label for="tipoEdicao" class="block text-sm font-medium text-gray-700">Tipo de Evento</label>
-                                    <select wire:model="tipoEdicao" id="tipoEdicao" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                    <select wire:model.live="tipoEdicao" id="tipoEdicao" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                                         <option>Observação</option>
                                         <option>Pesagem</option>
                                         <option>Vacinação</option>
@@ -219,15 +277,34 @@
                                     @error('tipoEdicao') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                                 </div>
                             </div>
+
+                            @if ($tipoEdicao === 'Pesagem')
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div class="sm:col-span-2">
+                                        <label for="valorEdicao" class="block text-sm font-medium text-gray-700">Peso</label>
+                                        <input type="number" step="any" wire:model="valorEdicao" id="valorEdicao" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                    </div>
+                                    <div>
+                                        <label for="unidadeEdicao" class="block text-sm font-medium text-gray-700">Unidade</label>
+                                        <select wire:model="unidadeEdicao" id="unidadeEdicao" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                            <option>Kg</option>
+                                            <option>@</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                @error('valorEdicao') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                            @else
+                                <div>
+                                    <label for="valorEdicao" class="block text-sm font-medium text-gray-700">Valor (Opcional)</label>
+                                    <input type="text" wire:model="valorEdicao" id="valorEdicao" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                    @error('valorEdicao') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                                </div>
+                            @endif
+
                             <div>
                                 <label for="descricaoEdicao" class="block text-sm font-medium text-gray-700">Descrição</label>
                                 <textarea wire:model="descricaoEdicao" id="descricaoEdicao" rows="2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></textarea>
                                 @error('descricaoEdicao') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label for="valorEdicao" class="block text-sm font-medium text-gray-700">Valor (Opcional)</label>
-                                <input type="text" wire:model="valorEdicao" id="valorEdicao" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                                @error('valorEdicao') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                             </div>
                         </div>
                     </div>
