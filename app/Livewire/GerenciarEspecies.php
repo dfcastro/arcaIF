@@ -1,0 +1,102 @@
+<?php
+// ARQUIVO: app/Livewire/GerenciarEspecies.php
+
+namespace App\Livewire;
+
+use Livewire\Component;
+use App\Models\Especie;
+use Livewire\WithPagination;
+use Illuminate\Validation\Rule;
+
+class GerenciarEspecies extends Component
+{
+    use WithPagination;
+
+    // Propriedades do formulário
+    public $especieId;
+    public $nome;
+    public $modalAberto = false;
+
+    // Propriedades para o modal de exclusão
+    public $modalDelecaoAberto = false;
+    public $especieParaDeletar;
+
+    protected function rules()
+    {
+        return [
+            'nome' => ['required', 'string', 'min:3', Rule::unique('especies')->ignore($this->especieId)],
+        ];
+    }
+
+    public function abrirModal()
+    {
+        $this->resetInput();
+        $this->modalAberto = true;
+    }
+
+    public function fecharModal()
+    {
+        $this->modalAberto = false;
+    }
+
+    private function resetInput()
+    {
+        $this->reset(['especieId', 'nome']);
+    }
+
+    public function salvar()
+    {
+        $this->validate();
+        Especie::updateOrCreate(['id' => $this->especieId], ['nome' => $this->nome]);
+        session()->flash('sucesso', $this->especieId ? 'Espécie atualizada com sucesso!' : 'Espécie cadastrada com sucesso!');
+        $this->fecharModal();
+    }
+
+    public function editar($id)
+    {
+        $especie = Especie::findOrFail($id);
+        $this->especieId = $id;
+        $this->nome = $especie->nome;
+        $this->modalAberto = true;
+    }
+
+    /**
+     * Abre o modal de confirmação de exclusão.
+     */
+    public function confirmarDelecao($especieId)
+    {
+        $this->especieParaDeletar = $especieId;
+        $this->modalDelecaoAberto = true;
+    }
+
+    /**
+     * Deleta a espécie após a confirmação.
+     */
+    public function deletar()
+    {
+        if (!$this->especieParaDeletar) {
+            return;
+        }
+
+        $especie = Especie::withCount('animais')->find($this->especieParaDeletar);
+
+        if ($especie && $especie->animais_count > 0) {
+            session()->flash('erro', 'Não é possível remover a espécie, pois existem animais cadastrados nela.');
+            $this->modalDelecaoAberto = false;
+            return;
+        }
+        
+        if ($especie) {
+            $especie->delete();
+            session()->flash('sucesso', 'Espécie removida com sucesso!');
+        }
+
+        $this->modalDelecaoAberto = false;
+    }
+
+    public function render()
+    {
+        $especies = Especie::orderBy('nome')->paginate(10);
+        return view('livewire.gerenciar-especies', ['especies' => $especies])->layout('layouts.app');
+    }
+}
