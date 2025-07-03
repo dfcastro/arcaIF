@@ -25,7 +25,11 @@ class ListarFormulas extends Component
         // Ao deletar uma fórmula, os animais que a usavam ficarão sem fórmula (null)
         // devido ao onDelete('set null') que definimos na migration.
         FormulaRacao::find($this->formulaParaDeletar)->delete();
-        session()->flash('sucesso', 'Fórmula removida com sucesso!');
+        
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => 'Fórmula removida com sucesso!'
+        ]);
         $this->modalDelecaoAberto = false;
     }
 

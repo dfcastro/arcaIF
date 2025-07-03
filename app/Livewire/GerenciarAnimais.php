@@ -21,7 +21,7 @@ class GerenciarAnimais extends Component
     public $especie_id, $raca_id, $localizacao_id, $categoria_animal_id;
     public $pai_id, $mae_id; // Propriedades para parentesco
     public $identificacao, $data_nascimento, $sexo, $observacoes, $status = 'Ativo';
-    
+
     // Controlo de Modais
     public $modalAberto = false, $modalDelecaoAberto = false;
     public $animalParaDeletar;
@@ -78,7 +78,7 @@ class GerenciarAnimais extends Component
             $this->resetPage();
         }
     }
-    
+
     public function updatedEspecieId($value)
     {
         if ($value) {
@@ -106,7 +106,7 @@ class GerenciarAnimais extends Component
         $this->status = 'Ativo';
         $this->resetErrorBag();
     }
-    
+
     public function abrirModal()
     {
         $this->resetInput();
@@ -121,7 +121,7 @@ class GerenciarAnimais extends Component
     public function salvar()
     {
         $this->validate();
-        
+
         Animal::updateOrCreate(['id' => $this->animalId], [
             'especie_id' => $this->especie_id,
             'raca_id' => $this->raca_id,
@@ -135,7 +135,11 @@ class GerenciarAnimais extends Component
             'status' => $this->status,
             'observacoes' => $this->observacoes,
         ]);
-        session()->flash('sucesso', $this->animalId ? 'Animal atualizado com sucesso!' : 'Animal cadastrado com sucesso!');
+
+        $this->dispatch('toast-notification', [
+            'type' => 'success',
+            'message' => $this->animalId ? 'Animal atualizado com sucesso!' : 'Animal cadastrado com sucesso!'
+        ]);
         $this->fecharModal();
     }
 
@@ -144,10 +148,10 @@ class GerenciarAnimais extends Component
         $animal = Animal::findOrFail($id);
         $this->animalId = $id;
         $this->especie_id = $animal->especie_id;
-        
+
         // Carrega todos os dropdowns necessários com base na espécie
         $this->updatedEspecieId($animal->especie_id);
-        
+
         $this->raca_id = $animal->raca_id;
         $this->localizacao_id = $animal->localizacao_id;
         $this->categoria_animal_id = $animal->categoria_animal_id;
@@ -161,7 +165,7 @@ class GerenciarAnimais extends Component
 
         $this->modalAberto = true;
     }
-    
+
     public function confirmarDelecao($id)
     {
         $this->animalParaDeletar = $id;
@@ -173,7 +177,11 @@ class GerenciarAnimais extends Component
         $this->authorize('manage-system');
         if ($this->animalParaDeletar) {
             Animal::find($this->animalParaDeletar)->delete();
-            session()->flash('sucesso', 'Animal removido com sucesso!');
+            
+            $this->dispatch('toast-notification', [
+                'type' => 'success',
+                'message' => 'Animal removido com sucesso!'
+            ]);
             $this->dispatch('animal-updated');
         }
         $this->modalDelecaoAberto = false;
@@ -191,8 +199,8 @@ class GerenciarAnimais extends Component
         // Lógica de ordenação
         if ($this->campoOrdenacao === 'especie_id') {
             $query->join('especies', 'animais.especie_id', '=', 'especies.id')
-                  ->orderBy('especies.nome', $this->direcaoOrdenacao)
-                  ->select('animais.*'); // Evita conflito de colunas 'id'
+                ->orderBy('especies.nome', $this->direcaoOrdenacao)
+                ->select('animais.*'); // Evita conflito de colunas 'id'
         } else {
             $query->orderBy($this->campoOrdenacao, $this->direcaoOrdenacao);
         }

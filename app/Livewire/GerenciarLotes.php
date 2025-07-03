@@ -55,7 +55,10 @@ class GerenciarLotes extends Component
             'descricao' => $this->descricao,
         ]);
 
-        session()->flash('sucesso', $this->loteId ? 'Lote atualizado com sucesso!' : 'Lote cadastrado com sucesso!');
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => $this->loteId ? 'Lote atualizado com sucesso!' : 'Lote cadastrado com sucesso!'
+        ]);
         $this->fecharModal();
     }
 
@@ -89,14 +92,20 @@ class GerenciarLotes extends Component
         $lote = Lote::withCount('animais')->find($this->loteParaDeletar);
 
         if ($lote && $lote->animais_count > 0) {
-            session()->flash('erro', 'Não é possível remover este lote, pois existem animais associados a ele.');
+            $this->dispatch('toast-notification', [
+                'type' => 'error',
+                'message' => 'Não é possível remover este lote, pois existem animais associados a ele.'
+            ]);
             $this->modalDelecaoAberto = false;
             return;
         }
 
         if ($lote) {
             $lote->delete();
-            session()->flash('sucesso', 'Lote removido com sucesso!');
+            $this->dispatch('toast-notification', [
+                'type' => 'sucess',
+                'message' => 'Lote removido com sucesso!'
+            ]);
         }
 
         $this->modalDelecaoAberto = false;

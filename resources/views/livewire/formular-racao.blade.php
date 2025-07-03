@@ -19,7 +19,7 @@
                         {{-- Coluna da Esquerda: Dados da Fórmula e Ingredientes --}}
                         <div>
                             <div class="space-y-4">
-                                <div><label class="block text-sm font-medium">Nome da Fórmula</label><input type="text" wire:model.lazy="nome_formula" class="mt-1 block w-full rounded-md" placeholder="Ex: Ração Crescimento Suínos 18% PB">@error('nome_formula')<span class="text-red-500 text-xs">{{$message}}</span>@enderror</div>
+                                <div><label class="block text-sm font-medium">Nome da Fórmula</label><input type="text" wire:model.lazy="nome_formula" class="mt-1 block w-full rounded-md">@error('nome_formula')<span class="text-red-500 text-xs">{{$message}}</span>@enderror</div>
                                 <div><label class="block text-sm font-medium">Espécie-alvo</label><select wire:model.lazy="especie_id" class="mt-1 block w-full rounded-md"><option value="">Selecione...</option>@foreach($todasEspecies as $especie)<option value="{{$especie->id}}">{{$especie->nome}}</option>@endforeach</select>@error('especie_id')<span class="text-red-500 text-xs">{{$message}}</span>@enderror</div>
                                 <div><label class="block text-sm font-medium">Descrição (Opcional)</label><textarea wire:model.lazy="descricao" rows="2" class="mt-1 block w-full rounded-md"></textarea></div>
                             </div>
@@ -30,10 +30,27 @@
                             @error('ingredientesDaFormula')<span class="text-red-500 text-sm font-semibold">{{$message}}</span>@enderror
                             
                             @foreach($ingredientesDaFormula as $index => $item)
-                            <div class="grid grid-cols-12 gap-3 items-center mt-2" wire:key="item-{{ $index }}">
-                                <div class="col-span-7"><select wire:model="ingredientesDaFormula.{{$index}}.ingrediente_id" class="block w-full rounded-md"><option value="">Selecione o ingrediente...</option>@foreach($todosIngredientes as $ingrediente)<option value="{{$ingrediente->id}}">{{$ingrediente->nome}}</option>@endforeach</select></div>
-                                <div class="col-span-3"><input type="number" step="0.01" wire:model.live.debounce.300ms="ingredientesDaFormula.{{$index}}.percentual_inclusao" class="block w-full rounded-md" placeholder="%"></div>
-                                <div class="col-span-2 text-right"><button wire:click.prevent="removerIngrediente({{$index}})" class="text-red-500 hover:text-red-700" title="Remover Ingrediente"><i class="fas fa-trash-alt"></i></button></div>
+                            <div class="grid grid-cols-12 gap-3 items-start mt-2 py-2 @if(!$loop->last) border-b border-gray-100 @endif" wire:key="item-{{ $index }}">
+                                <div class="col-span-7">
+                                    <select wire:model="ingredientesDaFormula.{{$index}}.ingrediente_id" class="block w-full rounded-md text-sm">
+                                        <option value="">Selecione...</option>
+                                        @foreach($todosIngredientes as $ingrediente)
+                                        <option value="{{$ingrediente->id}}">{{$ingrediente->nome}}</option>
+                                        @endforeach
+                                    </select>
+                                    {{-- CORREÇÃO: Adicionando o @error para o ingrediente --}}
+                                    @error('ingredientesDaFormula.'.$index.'.ingrediente_id') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                                </div>
+                                <div class="col-span-3">
+                                    <input type="number" step="0.01" wire:model.live.debounce.300ms="ingredientesDaFormula.{{$index}}.percentual_inclusao" class="block w-full rounded-md text-sm" placeholder="%">
+                                    {{-- CORREÇÃO: Adicionando o @error para o percentual --}}
+                                    @error('ingredientesDaFormula.'.$index.'.percentual_inclusao') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                                </div>
+                                <div class="col-span-2 text-right pt-1">
+                                    <button wire:click.prevent="removerIngrediente({{$index}})" class="text-gray-400 hover:text-red-600" title="Remover Ingrediente">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
                             </div>
                             @endforeach
 

@@ -54,7 +54,11 @@ class GerenciarLocalizacoes extends Component
             'nome' => $this->nome,
             'descricao' => $this->descricao,
         ]);
-        session()->flash('sucesso', $this->localizacaoId ? 'Localização atualizada com sucesso!' : 'Localização cadastrada com sucesso!');
+       $this->dispatch('toast-notification', [
+            'type' => 'success',
+            'message' => $this->localizacaoId ? 'Localização atualizada com sucesso!' : 'Localização cadastrada com sucesso!'
+        ]);
+
         $this->fecharModal();
     }
 
@@ -73,7 +77,7 @@ class GerenciarLocalizacoes extends Component
         $this->modalDelecaoAberto = true;
     }
 
-    public function deletar()
+   public function deletar()
     {
         if (!$this->localizacaoParaDeletar) {
             return;
@@ -82,14 +86,21 @@ class GerenciarLocalizacoes extends Component
         $localizacao = Localizacao::withCount('animais')->find($this->localizacaoParaDeletar);
 
         if ($localizacao && $localizacao->animais_count > 0) {
-            session()->flash('erro', 'Não é possível remover, pois existem animais nesta localização.');
+            // ANTES: session()->flash('erro', 'Não é possível remover, pois existem animais nesta localização.');
+            // DEPOIS:
+            $this->dispatch('toast-notification', [
+                'type' => 'error',
+                'message' => 'Não é possível remover, pois existem animais nesta localização.'
+            ]);
             $this->modalDelecaoAberto = false;
             return;
         }
 
         if ($localizacao) {
             $localizacao->delete();
-            session()->flash('sucesso', 'Localização removida com sucesso!');
+            // ANTES: session()->flash('sucesso', 'Localização removida com sucesso!');
+            // DEPOIS:
+            $this->dispatch('toast-notification', ['message' => 'Localização removida com sucesso!']);
         }
 
         $this->modalDelecaoAberto = false;

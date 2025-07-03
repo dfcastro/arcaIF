@@ -73,7 +73,11 @@ class GerenciarIngredientes extends Component
             'calcio' => $this->calcio,
             'fosforo' => $this->fosforo,
         ]);
-        session()->flash('sucesso', $this->ingredienteId ? 'Ingrediente atualizado com sucesso!' : 'Ingrediente cadastrado com sucesso!');
+
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' =>  $this->ingredienteId ? 'Ingrediente atualizado com sucesso!' : 'Ingrediente cadastrado com sucesso!'
+        ]);
         $this->fecharModal();
     }
 
@@ -102,7 +106,10 @@ class GerenciarIngredientes extends Component
     {
         // Futuramente, verificar se o ingrediente está em uso em alguma fórmula
         Ingrediente::find($this->ingredienteParaDeletar)->delete();
-        session()->flash('sucesso', 'Ingrediente removido com sucesso!');
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => 'Ingrediente removido com sucesso!'
+        ]);
         $this->modalDelecaoAberto = false;
     }
 

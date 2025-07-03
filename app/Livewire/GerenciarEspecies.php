@@ -48,7 +48,10 @@ class GerenciarEspecies extends Component
     {
         $this->validate();
         Especie::updateOrCreate(['id' => $this->especieId], ['nome' => $this->nome]);
-        session()->flash('sucesso', $this->especieId ? 'Espécie atualizada com sucesso!' : 'Espécie cadastrada com sucesso!');
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => $this->especieId ? 'Espécie atualizada com sucesso!' : 'Espécie cadastrada com sucesso!'
+        ]);
         $this->fecharModal();
     }
 
@@ -81,14 +84,20 @@ class GerenciarEspecies extends Component
         $especie = Especie::withCount('animais')->find($this->especieParaDeletar);
 
         if ($especie && $especie->animais_count > 0) {
-            session()->flash('erro', 'Não é possível remover a espécie, pois existem animais cadastrados nela.');
+            $this->dispatch('toast-notification', [
+                'type' => 'error',
+                'message' => 'Não é possível remover a espécie, pois existem animais cadastrados nela.'
+            ]);
             $this->modalDelecaoAberto = false;
             return;
         }
-        
+
         if ($especie) {
             $especie->delete();
-            session()->flash('sucesso', 'Espécie removida com sucesso!');
+            $this->dispatch('toast-notification', [
+                'type' => 'sucess',
+                'message' => 'Espécie removida com sucesso!'
+            ]);
         }
 
         $this->modalDelecaoAberto = false;

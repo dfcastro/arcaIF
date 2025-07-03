@@ -68,8 +68,11 @@ class CalendarioSanitario extends Component
                     'valor' => $evento->protocoloEvento->instrucoes,
                 ]);
             }
-            session()->flash('sucesso', 'Evento marcado como concluído!');
-            $this->fecharModal();
+            $this->dispatch('toast-notification', [
+                'type' => 'sucess',
+                'message' => 'Evento marcado como concluído!'
+            ]);
+                        $this->fecharModal();
         }
     }
 

@@ -29,16 +29,23 @@ class GerenciarUsuarios extends Component
         }
 
         if ($user->id === auth()->id() && $newRole !== 'administrador') {
-            session()->flash('erro', 'Não pode remover a sua própria função de administrador.');
+            $this->dispatch('toast-notification', [
+                'type' => 'error',
+                'message' => 'Não pode remover a sua própria função de administrador.'
+            ]);
             return;
         }
 
         $user->role = $newRole;
         $user->save();
 
-        session()->flash('sucesso', 'Função do utilizador ' . $user->name . ' atualizada para ' . $newRole . '.');
+
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => 'Função do utilizador ' . $user->name . ' atualizada para ' . $newRole . '.'
+        ]);
     }
-    
+
     // Abre o modal de criação
     public function openCreateModal()
     {
@@ -57,7 +64,7 @@ class GerenciarUsuarios extends Component
     {
         $this->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -68,7 +75,11 @@ class GerenciarUsuarios extends Component
             'role' => 'operador', // Define 'operador' como padrão
         ]);
 
-        session()->flash('sucesso', 'Utilizador criado com sucesso!');
+
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => 'Utilizador criado com sucesso!'
+        ]);
         $this->closeCreateModal();
     }
 
@@ -81,12 +92,18 @@ class GerenciarUsuarios extends Component
 
         // Evita que o admin se apague a si mesmo
         if ($user->id === auth()->id()) {
-            session()->flash('erro', 'Não pode apagar o seu próprio utilizador.');
+            $this->dispatch('toast-notification', [
+                'type' => 'error',
+                'message' => 'Não pode apagar o seu próprio utilizador.'
+            ]);
             return;
         }
 
         $user->delete();
-        session()->flash('sucesso', 'Utilizador removido com sucesso!');
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => 'Utilizador removido com sucesso!'
+        ]);
     }
 
 

@@ -24,14 +24,22 @@ class ShowLote extends Component
     {
         // 'attach' adiciona o registro na tabela de ligação (animal_lote)
         $this->lote->animais()->attach($animalId);
-        session()->flash('sucesso', 'Animal adicionado ao lote com sucesso!');
+
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => 'Animal adicionado ao lote com sucesso!'
+        ]);
     }
 
     public function removeAnimal($animalId)
     {
         // 'detach' remove o registro da tabela de ligação
         $this->lote->animais()->detach($animalId);
-        session()->flash('sucesso', 'Animal removido do lote com sucesso!');
+
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => 'Animal removido do lote com sucesso!'
+        ]);
     }
 
     public function render()

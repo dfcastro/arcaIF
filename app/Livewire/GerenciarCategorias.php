@@ -46,7 +46,7 @@ class GerenciarCategorias extends Component
     {
         $this->todasEspecies = Especie::orderBy('nome')->get();
     }
-    
+
     // Filtra as fórmulas de ração sempre que a espécie muda
     public function updatedEspecieId($value)
     {
@@ -87,7 +87,11 @@ class GerenciarCategorias extends Component
             'consumo_diario_kg' => $this->consumo_diario_kg,
             'descricao' => $this->descricao,
         ]);
-        session()->flash('sucesso', $this->categoriaId ? 'Categoria atualizada com sucesso!' : 'Categoria cadastrada com sucesso!');
+
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => $this->categoriaId ? 'Categoria atualizada com sucesso!' : 'Categoria cadastrada com sucesso!'
+        ]);
         $this->fecharModal();
     }
 
@@ -97,10 +101,10 @@ class GerenciarCategorias extends Component
         $this->categoriaId = $id;
         $this->nome = $categoria->nome;
         $this->especie_id = $categoria->especie_id;
-        
+
         // Carrega as fórmulas para a espécie selecionada
         $this->formulasDisponiveis = FormulaRacao::where('especie_id', $this->especie_id)->orderBy('nome_formula')->get();
-        
+
         $this->formula_racao_id = $categoria->formula_racao_id;
         $this->consumo_diario_kg = $categoria->consumo_diario_kg;
         $this->descricao = $categoria->descricao;
@@ -119,10 +123,16 @@ class GerenciarCategorias extends Component
         $categoria = CategoriaAnimal::withCount('animais')->find($this->categoriaParaDeletar);
 
         if ($categoria && $categoria->animais_count > 0) {
-            session()->flash('erro', 'Não é possível remover, pois existem animais nesta categoria.');
+            $this->dispatch('toast-notification', [
+                'type' => 'error',
+                'message' => 'Não é possível remover, pois existem animais nesta categoria.'
+            ]);
         } else {
             $categoria->delete();
-            session()->flash('sucesso', 'Categoria removida com sucesso!');
+            $this->dispatch('toast-notification', [
+                'type' => 'sucess',
+                'message' => 'Categoria removida com sucesso!'
+            ]);
         }
 
         $this->modalDelecaoAberto = false;

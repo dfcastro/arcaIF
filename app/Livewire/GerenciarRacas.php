@@ -17,7 +17,7 @@ class GerenciarRacas extends Component
     public $racaId;
     public $nome;
     public $especie_id;
-    
+
     public $modalAberto = false;
 
     // >> INÍCIO DAS NOVAS PROPRIEDADES PARA O MODAL DE EXCLUSÃO
@@ -36,7 +36,7 @@ class GerenciarRacas extends Component
                 'min:3',
                 Rule::unique('racas')->where(function ($query) {
                     return $query->where('especie_id', $this->especie_id)
-                                 ->where('id', '!=', $this->racaId);
+                        ->where('id', '!=', $this->racaId);
                 }),
             ],
             'especie_id' => 'required|exists:especies,id',
@@ -77,7 +77,10 @@ class GerenciarRacas extends Component
             'especie_id' => $this->especie_id,
         ]);
 
-        session()->flash('sucesso', $this->racaId ? 'Raça atualizada com sucesso!' : 'Raça cadastrada com sucesso!');
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => $this->racaId ? 'Raça atualizada com sucesso!' : 'Raça cadastrada com sucesso!'
+        ]);
 
         $this->fecharModal();
     }
@@ -116,14 +119,20 @@ class GerenciarRacas extends Component
         $raca = Raca::withCount('animais')->find($this->racaParaDeletar);
 
         if ($raca && $raca->animais_count > 0) {
-            session()->flash('erro', 'Não é possível remover esta raça, pois existem animais cadastrados nela.');
+            $this->dispatch('toast-notification', [
+                'type' => 'error',
+                'message' => 'Não é possível remover esta raça, pois existem animais cadastrados nela.'
+            ]);
             $this->modalDelecaoAberto = false; // Fecha o modal
             return;
         }
 
         if ($raca) {
             $raca->delete();
-            session()->flash('sucesso', 'Raça removida com sucesso!');
+            $this->dispatch('toast-notification', [
+                'type' => 'sucess',
+                'message' => 'Raça removida com sucesso!'
+            ]);
         }
 
         $this->modalDelecaoAberto = false; // Fecha o modal

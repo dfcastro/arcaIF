@@ -39,12 +39,12 @@ class GerenciarProtocolos extends Component
             'descricao' => 'nullable|string',
             'eventos' => 'required|array|min:1',
             'eventos.*.nome_evento' => 'required|string|min:3',
-            'eventos.*.tipo' => 'required|in:'.implode(',', $this->tiposDeEvento),
+            'eventos.*.tipo' => 'required|in:' . implode(',', $this->tiposDeEvento),
             'eventos.*.dias_apos_inicio' => 'required|integer|min:0',
             'eventos.*.instrucoes' => 'nullable|string',
         ];
     }
-    
+
     protected $messages = [
         'eventos.required' => 'É necessário adicionar pelo menos um evento ao protocolo.',
         'eventos.*.nome_evento.required' => 'O nome do evento é obrigatório.',
@@ -75,7 +75,7 @@ class GerenciarProtocolos extends Component
     {
         $this->modalAberto = false;
     }
-    
+
     // Funções para gerir a lista de eventos
     public function adicionarEvento()
     {
@@ -106,7 +106,11 @@ class GerenciarProtocolos extends Component
             }
         });
 
-        session()->flash('sucesso', $this->protocoloId ? 'Protocolo atualizado com sucesso!' : 'Protocolo cadastrado com sucesso!');
+
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => $this->protocoloId ? 'Protocolo atualizado com sucesso!' : 'Protocolo cadastrado com sucesso!'
+        ]);
         $this->fecharModal();
     }
 
@@ -131,7 +135,10 @@ class GerenciarProtocolos extends Component
     {
         // Adicionar verificação se o protocolo está em uso na agenda
         ProtocoloSanitario::find($this->protocoloParaDeletar)->delete();
-        session()->flash('sucesso', 'Protocolo removido com sucesso!');
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => 'Protocolo removido com sucesso!'
+        ]);
         $this->modalDelecaoAberto = false;
     }
 

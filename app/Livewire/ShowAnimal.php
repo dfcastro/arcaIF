@@ -100,16 +100,35 @@ class ShowAnimal extends Component
             'macho_relacionado_id' => 'nullable|exists:animais,id',
             'observacoes_reprodutivas' => 'nullable|string',
         ]);
-        $this->animal->eventosReprodutivos()->create($validated);
-        session()->flash('sucesso', 'Evento reprodutivo registado!');
+
+        // CORREÇÃO: Mapeia os dados validados para os nomes corretos das colunas da tabela
+        $this->animal->eventosReprodutivos()->create([
+            'tipo' => $validated['tipo_evento_reprodutivo'],
+            'data' => $validated['data_evento_reprodutivo'],
+            'status' => $validated['status_reprodutivo'],
+            'animal_relacionado_id' => $validated['macho_relacionado_id'],
+            'observacoes' => $validated['observacoes_reprodutivas'],
+        ]);
+
+
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => 'Evento reprodutivo registado!'
+        ]);
+
         $this->showEventoReprodutivoModal = false;
-        $this->animal->refresh();
+        $this->animal->refresh(); // Recarrega os dados do animal para a view
     }
+
 
     public function deleteEventoReprodutivo($id)
     {
         EventoReprodutivo::find($id)->delete();
-        session()->flash('sucesso', 'Evento reprodutivo removido!');
+
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => 'Evento reprodutivo removido!'
+        ]);
         $this->animal->refresh();
     }
 
@@ -117,7 +136,11 @@ class ShowAnimal extends Component
     {
         $this->validate(['protocoloSelecionado' => 'required']);
         if (in_array($this->protocoloSelecionado, $this->getProtocolosAplicadosIds())) {
-            session()->flash('erro', 'Este protocolo já foi aplicado a este animal.');
+
+            $this->dispatch('toast-notification', [
+                'type' => 'error',
+                'message' => 'Este protocolo já foi aplicado a este animal.'
+            ]);
             return;
         }
         $protocolo = ProtocoloSanitario::with('eventos')->find($this->protocoloSelecionado);
@@ -129,7 +152,12 @@ class ShowAnimal extends Component
             $dataAgendada = Carbon::parse($this->animal->data_nascimento)->addDays($evento->dias_apos_inicio);
             $this->animal->agendaSanitaria()->create(['protocolo_evento_id' => $evento->id, 'data_agendada' => $dataAgendada, 'status' => 'Agendado']);
         }
-        session()->flash('sucesso', 'Protocolo "' . $protocolo->nome . '" aplicado com sucesso!');
+
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => 'Protocolo "' . $protocolo->nome . '" aplicado com sucesso!'
+        ]);
+
         $this->showAplicarProtocoloModal = false;
         $this->animal->refresh();
     }
@@ -145,7 +173,11 @@ class ShowAnimal extends Component
                 'descricao' => 'Conclusão (agendada): ' . $evento->protocoloEvento->nome_evento,
                 'valor' => $evento->protocoloEvento->instrucoes,
             ]);
-            session()->flash('sucesso', 'Evento sanitário concluído!');
+
+            $this->dispatch('toast-notification', [
+                'type' => 'sucess',
+                'message' => 'Evento sanitário concluído!'
+            ]);
             $this->animal->refresh();
         }
     }
@@ -167,7 +199,11 @@ class ShowAnimal extends Component
             $this->animal->status = $this->tipo === 'Venda' ? 'Vendido' : 'Óbito';
             $this->animal->save();
         }
-        session()->flash('sucesso', 'Evento registado com sucesso!');
+
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => 'Evento registado com sucesso!'
+        ]);
         $this->resetAddForm();
         $this->animal->refresh();
     }
@@ -196,7 +232,11 @@ class ShowAnimal extends Component
     public function deleteMovimentacao($movimentacaoId)
     {
         Movimentacao::find($movimentacaoId)->delete();
-        session()->flash('sucesso', 'Evento removido!');
+
+        $this->dispatch('toast-notification', [
+            'type' => 'sucess',
+            'message' => 'Evento removido!'
+        ]);
         $this->animal->refresh();
     }
 

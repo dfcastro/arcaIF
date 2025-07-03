@@ -3,6 +3,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon; // 1. ADICIONE ESTA LINHA NO TOPO DO FICHEIRO
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -25,6 +26,35 @@ class Animal extends Model
         'status',
         'observacoes',
     ];
+
+    /**
+     * NOVO ACESSOR PARA FORMATAR A IDADE
+     * Este método calcula a idade em anos e meses.
+     */
+    public function getFormattedAgeAttribute(): string
+    {
+        if (!$this->data_nascimento) {
+            return 'Idade não informada';
+        }
+
+        $age = Carbon::parse($this->data_nascimento)->diff(Carbon::now());
+
+        $parts = [];
+        if ($age->y > 0) {
+            $parts[] = $age->y . ' ' . \Illuminate\Support\Str::plural('ano', $age->y);
+        }
+        if ($age->m > 0) {
+            $parts[] = $age->m . ' ' . \Illuminate\Support\Str::plural('mês', $age->m);
+        }
+        if (empty($parts)) {
+            if ($age->d > 0) {
+                return $age->d . ' ' . \Illuminate\Support\Str::plural('dia', $age->d);
+            }
+            return 'Recém-nascido';
+        }
+
+        return implode(' e ', $parts);
+    }
 
     // ... (suas relações existentes como especie(), raca(), etc., continuam aqui) ...
     public function especie() { return $this->belongsTo(Especie::class); }

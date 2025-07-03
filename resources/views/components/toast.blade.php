@@ -17,49 +17,50 @@
         },
         get colorClass() {
              switch(this.type) {
-                case 'success': return 'bg-green-500';
-                case 'error': return 'bg-red-500';
-                case 'warning': return 'bg-yellow-500';
-                default: return 'bg-blue-500';
+                case 'success': return 'bg-green-500 text-white';
+                case 'error': return 'bg-red-500 text-white';
+                case 'warning': return 'bg-yellow-500 text-black';
+                default: return 'bg-blue-500 text-white';
             }
+        },
+        showNotification(event) {
+            // CORREÇÃO: Acessamos o primeiro item do array 'detail'
+            const payload = event.detail[0] || {};
+
+            this.type = payload.type || 'success';
+            this.message = payload.message || 'Operação realizada com sucesso!';
+            this.show = true;
+            
+            clearTimeout(this.timeout);
+            this.timeout = setTimeout(() => this.show = false, 4000);
         }
     }"
-    x-init="
-        $watch('show', value => {
-            if (value) {
-                clearTimeout(this.timeout);
-                this.timeout = setTimeout(() => show = false, 3000);
-            }
-        });
-        window.addEventListener('toast-notification', event => {
-            this.type = event.detail.type || 'success';
-            this.message = event.detail.message || 'Operação realizada com sucesso!';
-            this.show = true;
-        });
-    "
     x-show="show"
+    x-on:toast-notification.window="showNotification($event)"
     x-transition:enter="transform ease-out duration-300 transition"
     x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
     x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
-    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave="transition ease-in duration-200"
     x-transition:leave-start="opacity-100"
     x-transition:leave-end="opacity-0"
-    class="fixed top-5 right-5 z-50 max-w-xs w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden"
+    class="fixed top-5 right-5 z-50 w-full max-w-xs"
     style="display: none;"
 >
-    <div class="p-4">
-        <div class="flex items-start">
-            <div class="flex-shrink-0">
-                <i class="fas" :class="[iconClass, colorClass.replace('bg-', 'text-')]" style="font-size: 1.25rem;"></i>
-            </div>
-            <div class="ml-3 w-0 flex-1 pt-0.5">
-                <p class="text-sm font-medium text-gray-900" x-text="message"></p>
-            </div>
-            <div class="ml-4 flex-shrink-0 flex">
-                <button @click="show = false" class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none">
-                    <span class="sr-only">Fechar</span>
-                    <i class="fas fa-times"></i>
-                </button>
+    <div class="rounded-md shadow-lg" :class="colorClass">
+        <div class="p-4">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <i class="fas" :class="iconClass" style="font-size: 1.25rem;"></i>
+                </div>
+                <div class="ml-3 w-0 flex-1 pt-0.5">
+                    <p class="text-sm font-medium" x-text="message"></p>
+                </div>
+                <div class="ml-4 flex-shrink-0 flex">
+                    <button @click="show = false" class="inline-flex rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-offset-2" :class="colorClass">
+                        <span class="sr-only">Fechar</span>
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>

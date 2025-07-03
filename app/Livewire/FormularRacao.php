@@ -40,6 +40,7 @@ class FormularRacao extends Component
             'especie_id' => 'required|exists:especies,id',
             'ingredientesDaFormula' => 'array|min:1',
             'ingredientesDaFormula.*.ingrediente_id' => 'required',
+            // CORREÇÃO: Validação mais robusta para o percentual
             'ingredientesDaFormula.*.percentual_inclusao' => 'required|numeric|min:0.01|max:100',
         ];
     }
@@ -50,6 +51,8 @@ class FormularRacao extends Component
         'ingredientesDaFormula.min' => 'A fórmula deve ter pelo menos um ingrediente.',
         'ingredientesDaFormula.*.ingrediente_id.required' => 'Selecione um ingrediente.',
         'ingredientesDaFormula.*.percentual_inclusao.required' => 'A % é obrigatória.',
+        'ingredientesDaFormula.*.percentual_inclusao.min' => 'A % deve ser maior que 0.',
+        'ingredientesDaFormula.*.percentual_inclusao.numeric' => 'A % deve ser um número.',
     ];
     
     public function mount()
@@ -75,10 +78,8 @@ class FormularRacao extends Component
         $this->calcularTotais();
     }
     
-    // Este é o método mágico que recalcula tudo sempre que algo muda
     public function updated($propertyName)
     {
-        // Verifica se a mudança foi em algum campo dos ingredientes
         if (str_contains($propertyName, 'ingredientesDaFormula')) {
             $this->calcularTotais();
         }
@@ -86,19 +87,19 @@ class FormularRacao extends Component
 
     public function calcularTotais()
     {
-        // Reseta todos os totais
-        $this->total_inclusao = 0;
-        $this->total_preco_kg = 0;
-        $this->total_proteina_bruta = 0;
-        $this->total_extrato_etereo = 0;
-        $this->total_fibra_bruta = 0;
-        $this->total_materia_mineral = 0;
-        $this->total_calcio = 0;
-        $this->total_fosforo = 0;
+        $this->reset(['total_inclusao', 'total_preco_kg', 'total_proteina_bruta', 'total_extrato_etereo', 'total_fibra_bruta', 'total_materia_mineral', 'total_calcio', 'total_fosforo']);
+        $this->resetErrorBag();
 
-        foreach ($this->ingredientesDaFormula as $item) {
+        $ingredientesUsados = [];
+        foreach ($this->ingredientesDaFormula as $index => $item) {
             $percentual = floatval($item['percentual_inclusao'] ?? 0) / 100;
             if ($percentual > 0 && !empty($item['ingrediente_id'])) {
+                if (in_array($item['ingrediente_id'], $ingredientesUsados)) {
+                    $this->addError('ingredientesDaFormula.' . $index . '.ingrediente_id', 'Ingrediente repetido.');
+                    continue;
+                }
+                $ingredientesUsados[] = $item['ingrediente_id'];
+                
                 $ingrediente = $this->todosIngredientes->find($item['ingrediente_id']);
                 
                 if($ingrediente) {
@@ -119,8 +120,17 @@ class FormularRacao extends Component
     {
         $this->validate();
 
-        if (round($this->total_inclusao) != 100) {
+        if (round($this->total_inclusao, 2) != 100) {
             $this->addError('total_inclusao', 'A soma dos percentuais de inclusão deve ser exatamente 100%.');
+            return;
+        }
+
+        $ingredientesIds = array_column($this->ingredientesDaFormula, 'ingrediente_id');
+        if (count($ingredientesIds) !== count(array_unique($ingredientesIds))) {
+             $this->dispatch('toast-notification', [
+                'type' => 'error',
+                'message' => 'Existem ingredientes duplicados na fórmula.'
+            ]);
             return;
         }
 
@@ -132,14 +142,21 @@ class FormularRacao extends Component
             ]);
 
             foreach ($this->ingredientesDaFormula as $item) {
-                $formula->ingredientes()->attach($item['ingrediente_id'], [
-                    'percentual_inclusao' => $item['percentual_inclusao']
-                ]);
+                // CORREÇÃO: Garante que apenas linhas completas são salvas
+                if(!empty($item['ingrediente_id']) && !empty($item['percentual_inclusao'])) {
+                    $formula->ingredientes()->attach($item['ingrediente_id'], [
+                        'percentual_inclusao' => $item['percentual_inclusao']
+                    ]);
+                }
             }
         });
 
-        session()->flash('sucesso', 'Fórmula de ração salva com sucesso!');
-        $this->redirect('/ingredientes'); // Ou para uma futura lista de fórmulas
+        $this->dispatch('toast-notification', [
+            'type' => 'success',
+            'message' => 'Fórmula de ração salva com sucesso!'
+        ]);
+        
+        return $this->redirect('/formulas', navigate: true);
     }
 
     public function render()
