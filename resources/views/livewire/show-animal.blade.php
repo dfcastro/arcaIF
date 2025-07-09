@@ -23,7 +23,7 @@
                         <div class="mt-2 text-sm text-gray-600">
                             <span>{{ $animal->especie->nome }}</span><span class="mx-2">&bull;</span>
                             <span>{{ $animal->raca->nome ?? 'Raça não definida' }}</span><span class="mx-2">&bull;</span>
-                           <span>{{ $animal->formatted_age }}</span><span class="mx-2">&bull;</span>
+                            <span>{{ $animal->formatted_age }}</span><span class="mx-2">&bull;</span>
                             <span>{{ $animal->sexo }}</span>
                         </div>
                     </div>
@@ -55,6 +55,9 @@
                             </div>
                         </div>
                     </div>
+
+                    {{-- Card do Ciclo Reprodutivo --}}
+                    <x-animal.reproductive-cycle-card :animal="$animal" />
 
                     {{-- Card de Dados Cadastrais e Parentesco --}}
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -89,20 +92,20 @@
 
                     {{-- Card do Gráfico de Pesagem --}}
                     @if(!empty($pesagemChartData['labels']) && count($pesagemChartData['labels']) > 1)
-                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <div class="p-6 text-gray-900"
-                                x-data="{
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg" wire:ignore>
+                        <div class="p-6 text-gray-900"
+                            x-data="{
                                     chart: null,
-                                    initChart(chartData) {
-                                        if (this.chart) { this.chart.destroy(); }
+                                    initChart(initialData) {
+                                        if (this.chart) return;
                                         const ctx = this.$refs.canvas.getContext('2d');
                                         this.chart = new Chart(ctx, {
                                             type: 'line',
                                             data: {
-                                                labels: chartData.labels,
+                                                labels: initialData.labels,
                                                 datasets: [{
                                                     label: 'Evolução do Peso (kg)',
-                                                    data: chartData.data,
+                                                    data: initialData.data,
                                                     borderColor: 'rgba(22, 163, 74, 0.8)',
                                                     backgroundColor: 'rgba(22, 163, 74, 0.2)',
                                                     fill: true,
@@ -110,27 +113,25 @@
                                                 }]
                                             },
                                             options: {
-                                                scales: {
-                                                    y: { 
-                                                        beginAtZero: false 
-                                                    }
-                                                },
-                                                plugins: {
-                                                    legend: {
-                                                        display: true // Garante que o objeto legend exista
-                                                    }
-                                                }
+                                                animation: false,
+                                                scales: { y: { beginAtZero: false } },
+                                                plugins: { legend: { display: true } }
                                             }
                                         });
+                                    },
+                                    updateChart(newData) {
+                                        if (!this.chart || !newData) return;
+                                        this.chart.data.labels = newData.labels;
+                                        this.chart.data.datasets[0].data = newData.data;
+                                        this.chart.update();
                                     }
                                 }"
-                                x-init="initChart({{ json_encode($pesagemChartData) }})"
-                                @update-pesagem-chart.window="initChart($event.detail.data)"
-                            >
-                                <h3 class="text-lg font-medium leading-6">Evolução de Peso</h3>
-                                <div class="mt-4 h-64"><canvas x-ref="canvas"></canvas></div>
-                            </div>
+                            x-init="initChart({{ json_encode($pesagemChartData) }})"
+                            @update-pesagem-chart.window="updateChart($event.detail[0])">
+                            <h3 class="text-lg font-medium leading-6">Evolução de Peso</h3>
+                            <div class="mt-4 h-64"><canvas x-ref="canvas"></canvas></div>
                         </div>
+                    </div>
                     @endif
                 </div>
 
@@ -138,11 +139,6 @@
                 <div class="lg:col-span-2">
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6 text-gray-900">
-                            @if (session()->has('sucesso'))
-                            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-3 mb-4 rounded" role="alert">
-                                <p>{{ session('sucesso') }}</p>
-                            </div>
-                            @endif
 
                             <h3 class="text-lg font-medium leading-6 text-gray-900">Adicionar Evento ao Histórico</h3>
                             <form wire:submit="salvarMovimentacao" class="mt-4 border-t border-gray-200 py-6 space-y-4">
@@ -162,7 +158,8 @@
                                     <div class="sm:col-span-2"><label for="valor" class="block text-sm font-medium text-gray-700">Peso</label><input type="number" step="any" wire:model="valor" id="valor" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Ex: 85.5"></div>
                                     <div><label for="unidade" class="block text-sm font-medium text-gray-700">Unidade</label><select wire:model="unidade" id="unidade" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                                             <option>Kg</option>
-                                            <option>@</option>
+                                            <option>@ (Peso Vivo)</option>
+                                            <option>@ (Carcaça)</option>
                                         </select></div>
                                 </div>
                                 @error('valor') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
@@ -176,14 +173,26 @@
                             <div class="mt-6 border-t border-gray-200 pt-6">
                                 <h3 class="text-lg font-medium leading-6 text-gray-900">Histórico e Agenda</h3>
                                 <div class="mt-4">
-                                    <div class="sm:hidden"><select wire:model.live="activeTab" class="block w-full rounded-md">@foreach (['Reprodutivo', 'Agenda Sanitária', 'Todos', 'Pesagem', 'Vacinação', 'Medicação', 'Observação'] as $tab)<option>{{ $tab }}</option>@endforeach</select></div>
+                                    <div class="sm:hidden">
+                                        <select wire:model.live="activeTab" class="block w-full rounded-md" wire:loading.attr="disabled">
+                                            @foreach (['Reprodutivo', 'Agenda Sanitária', 'Todos', 'Pesagem', 'Vacinação', 'Medicação', 'Observação'] as $tab)
+                                            <option>{{ $tab }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                     <div class="hidden sm:block">
                                         <div class="border-b border-gray-200">
-                                            <nav class="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">@foreach (['Reprodutivo', 'Agenda Sanitária', 'Todos', 'Pesagem', 'Vacinação', 'Medicação', 'Observação'] as $tab)<button wire:click="$set('activeTab', '{{ $tab }}')" @class(['whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm', 'border-if-green-500 text-if-green-600'=> $activeTab === $tab, 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' => $activeTab !== $tab])>{{ $tab }}</button>@endforeach</nav>
+                                            <nav class="-mb-px flex space-x-8 overflow-x-auto" wire:loading.class="opacity-50 cursor-not-allowed" aria-label="Tabs">
+                                                @foreach (['Reprodutivo', 'Agenda Sanitária', 'Todos', 'Pesagem', 'Vacinação', 'Medicação', 'Observação'] as $tab)
+                                                <button wire:click="$set('activeTab', '{{ $tab }}')" wire:loading.attr="disabled" @class(['whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm', 'border-if-green-500 text-if-green-600'=> $activeTab === $tab, 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' => $activeTab !== $tab])>
+                                                    {{ $tab }}
+                                                </button>
+                                                @endforeach
+                                            </nav>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="mt-6 flow-root">
+                                <div class="mt-6 flow-root" wire:loading.class.delay="opacity-50">
                                     <ul role="list" class="-mb-8">
                                         @if($activeTab === 'Reprodutivo')
                                         @forelse ($animal->eventosReprodutivos as $evento)
@@ -191,7 +200,10 @@
                                             <div class="relative pb-8">
                                                 @if (!$loop->last)<span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"></span>@endif
                                                 <div class="relative flex items-start space-x-3">
-                                                    <div><span class="h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center ring-8 ring-white"><i class="fas {{ $this->getIconeEventoReprodutivo($evento->tipo) }} text-white"></i></span></div>
+                                                    <span class="h-8 w-8 rounded-full {{ $this->getCorIconeEventoReprodutivo($evento->tipo) }} flex items-center justify-center ring-8 ring-white">
+                                                        {{-- >> LINHA CORRIGIDA << --}}
+                                                        <i class="fas {{ $this->getIconeEventoReprodutivo($evento->tipo) }} text-white"></i>
+                                                    </span>
                                                     <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
                                                         <div>
                                                             <p class="text-sm font-medium text-gray-900">{{ $evento->tipo }}</p>
@@ -265,8 +277,6 @@
     </div>
 
     {{-- MODAIS --}}
-
-    {{-- Modal para Aplicar Protocolo Sanitário --}}
     @if($showAplicarProtocoloModal)
     <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -275,9 +285,6 @@
             <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <h3 class="text-lg font-medium text-gray-900">Aplicar Protocolo Sanitário</h3>
-                    @if (session()->has('erro'))<div class="mt-2 bg-red-100 text-red-700 p-3 rounded" role="alert">
-                        <p>{{ session('erro') }}</p>
-                    </div>@endif
                     <div class="mt-4 space-y-3">
                         <div>
                             <label for="protocolo" class="block text-sm font-medium text-gray-700">Selecione o protocolo:</label>
@@ -303,7 +310,6 @@
     </div>
     @endif
 
-    {{-- Modal para Adicionar Evento Reprodutivo --}}
     @if($showEventoReprodutivoModal)
     <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -314,14 +320,16 @@
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         <h3 class="text-lg font-medium text-gray-900">Registar Evento Reprodutivo</h3>
                         <div class="mt-4 space-y-4">
-                            <div><label class="block text-sm">Tipo</label><select wire:model.live="tipo_evento_reprodutivo" class="mt-1 block w-full rounded-md text-sm">
+                            <div><label class="block text-sm">Tipo</label>
+                                <select wire:model.live="tipo_evento_reprodutivo" class="mt-1 block w-full rounded-md text-sm">
                                     <option>Cobrição</option>
                                     <option>Inseminação</option>
                                     <option>Diagnóstico de Gestação</option>
-                                    <option>Previsão de Parto</option>
                                     <option>Parto</option>
+                                    <option>Desmame</option>
                                     <option>Aborto</option>
-                                </select></div>
+                                </select>
+                            </div>
                             <div><label class="block text-sm">Data</label><input type="date" wire:model="data_evento_reprodutivo" class="mt-1 block w-full rounded-md text-sm">@error('data_evento_reprodutivo')<span class="text-red-500 text-xs">{{$message}}</span>@enderror</div>
                             @if($tipo_evento_reprodutivo == 'Cobrição' || $tipo_evento_reprodutivo == 'Inseminação')
                             <div><label class="block text-sm">Macho Utilizado</label><select wire:model="macho_relacionado_id" class="mt-1 block w-full rounded-md text-sm">
@@ -341,7 +349,6 @@
     </div>
     @endif
 
-    {{-- Modal de Edição de Movimentação --}}
     @if ($showEditModal)
     <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -368,7 +375,8 @@
                                 <div class="sm:col-span-2"><label for="valorEdicao" class="block text-sm">Peso</label><input type="number" step="any" wire:model="valorEdicao" id="valorEdicao" class="mt-1 block w-full rounded-md"></div>
                                 <div><label for="unidadeEdicao" class="block text-sm">Unidade</label><select wire:model="unidadeEdicao" id="unidadeEdicao" class="mt-1 block w-full rounded-md">
                                         <option>Kg</option>
-                                        <option>@</option>
+                                        <option>@ (Peso Vivo)</option>
+                                        <option>@ (Carcaça)</option>
                                     </select></div>
                             </div>
                             @error('valorEdicao') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror

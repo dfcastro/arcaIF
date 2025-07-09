@@ -105,7 +105,14 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $animal->categoria->nome ?? 'N/D' }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $animal->sexo }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ \Carbon\Carbon::parse($animal->data_nascimento)->format('d/m/Y') }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap"><span @class(['px-2 inline-flex text-xs leading-5 font-semibold rounded-full', 'bg-green-100 text-green-800'=> $animal->status == 'Ativo', 'bg-yellow-100 text-yellow-800' => $animal->status == 'Vendido', 'bg-red-100 text-red-800' => $animal->status == 'Óbito'])>{{ $animal->status }}</span></td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span @class([ 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full' , 'bg-green-100 text-green-800'=> $animal->status == 'Ativo',
+                                                'bg-yellow-100 text-yellow-800' => $animal->status == 'Vendido',
+                                                'bg-purple-100 text-purple-800' => $animal->status == 'Doação', // <-- NOVA LINHA 'bg-red-100 text-red-800'=> $animal->status == 'Óbito',
+                                                    ])>
+                                                    {{ $animal->status }}
+                                            </span>
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
                                             <button wire:click="editar({{ $animal->id }})" class="text-if-green-600 hover:text-if-green-900" title="Editar"><i class="fas fa-pencil-alt"></i></button>
                                             @can('manage-system')
@@ -184,7 +191,7 @@
                                     <option value="">Nenhuma</option>@foreach ($localizacoes as $localizacao)<option value="{{ $localizacao->id }}">{{ $localizacao->nome }}</option>@endforeach
                                 </select></div>
                             <div class="md:col-span-2"><label class="block text-sm font-medium">Categoria (Dieta)</label><select wire:model="categoria_animal_id" class="mt-1 block w-full rounded-md" @if(!$especie_id) disabled @endif>
-                                    <option value="">Selecione uma espécie primeiro</option>@foreach ($categoriasDisponiveis as $categoria)<option value="{{ $categoria->id }}">{{ $categoria->nome }}</option>@endforeach
+                                    <option value="">Selecione uma dieta</option>@foreach ($categoriasDisponiveis as $categoria)<option value="{{ $categoria->id }}">{{ $categoria->nome }}</option>@endforeach
                                 </select>@error('categoria_animal_id')<span class="text-red-500 text-xs mt-1">{{$message}}</span>@enderror</div>
 
                             <div class="md:col-span-2"><label class="block text-sm font-medium">Identificação</label><input type="text" wire:model="identificacao" placeholder="Ex: Brinco 123, nome 'Mimoso'" class="mt-1 block w-full rounded-md">@error('identificacao')<span class="text-red-500 text-xs">{{$message}}</span>@enderror</div>
@@ -200,6 +207,7 @@
                             <div class="md:col-span-2"><label class="block text-sm font-medium">Status</label><select wire:model="status" class="mt-1 block w-full rounded-md">
                                     <option value="Ativo">Ativo</option>
                                     <option value="Vendido">Vendido</option>
+                                    <option value="Doação">Doação</option>
                                     <option value="Óbito">Óbito</option>
                                 </select>@error('status')<span class="text-red-500 text-xs">{{$message}}</span>@enderror</div>
 

@@ -4,12 +4,14 @@
 namespace App\Livewire;
 
 use App\Models\Animal;
+use App\Models\AgendaSanitaria;
 use App\Models\EventoReprodutivo;
 use App\Models\Movimentacao;
 use App\Models\ProtocoloSanitario;
 use Carbon\Carbon;
 use Livewire\Component;
-use App\Models\AgendaSanitaria;
+use Illuminate\Validation\Rule;
+
 
 class ShowAnimal extends Component
 {
@@ -42,7 +44,6 @@ class ShowAnimal extends Component
     public $showAplicarProtocoloModal = false;
     public $showEventoReprodutivoModal = false;
 
-
     // --- Propriedades para Estado da Página ---
     public $activeTab = 'Reprodutivo';
 
@@ -60,48 +61,20 @@ class ShowAnimal extends Component
         $this->protocolosDisponiveis = ProtocoloSanitario::where('especie_id', $this->animal->especie_id)->orderBy('nome')->get();
     }
 
-    /**
-     * NOVO MÉTODO PARA OBTER O ÍCONE DA ESPÉCIE
-     * Este método é público para que a view possa chamá-lo.
-     */
-    public function getIconeEspecie()
-    {
-        switch (strtolower($this->animal->especie->nome)) {
-            case 'bovino':
-            case 'bovinos':
-                return 'fa-cow';
-            case 'ovino':
-            case 'ovinos':
-                return 'fa-sheep';
-            case 'suíno':
-            case 'suínos':
-                return 'fa-piggy-bank';
-            case 'ave':
-            case 'aves':
-                return 'fa-dove';
-            case 'equino':
-            case 'equinos':
-                return 'fa-horse';
-            default:
-                return 'fa-paw';
-        }
-    }
-
-
-
-    // --- MÉTODOS DE AÇÃO (SALVAR, DELETAR, ETC) ---
+    // --- MÉTODOS DE AÇÃO ---
 
     public function salvarEventoReprodutivo()
     {
         $validated = $this->validate([
-            'tipo_evento_reprodutivo' => 'required|in:Cobrição,Inseminação,Diagnóstico de Gestação,Previsão de Parto,Parto,Aborto',
+            'tipo_evento_reprodutivo' => ['required', Rule::in(['Cobrição', 'Inseminação', 'Diagnóstico de Gestação', 'Parto', 'Desmame', 'Aborto'])],
             'data_evento_reprodutivo' => 'required|date',
             'status_reprodutivo' => 'required|in:Agendado,Realizado,Falhou',
             'macho_relacionado_id' => 'nullable|exists:animais,id',
             'observacoes_reprodutivas' => 'nullable|string',
         ]);
 
-        // CORREÇÃO: Mapeia os dados validados para os nomes corretos das colunas da tabela
+        // >> CORREÇÃO APLICADA AQUI <<
+        // Mapeamos manualmente os nomes das variáveis para os nomes corretos das colunas.
         $this->animal->eventosReprodutivos()->create([
             'tipo' => $validated['tipo_evento_reprodutivo'],
             'data' => $validated['data_evento_reprodutivo'],
@@ -110,25 +83,15 @@ class ShowAnimal extends Component
             'observacoes' => $validated['observacoes_reprodutivas'],
         ]);
 
-
-        $this->dispatch('toast-notification', [
-            'type' => 'sucess',
-            'message' => 'Evento reprodutivo registado!'
-        ]);
-
+        $this->dispatch('toast-notification', ['type' => 'success', 'message' => 'Evento reprodutivo registado!']);
         $this->showEventoReprodutivoModal = false;
-        $this->animal->refresh(); // Recarrega os dados do animal para a view
+        $this->animal->refresh();
     }
-
 
     public function deleteEventoReprodutivo($id)
     {
         EventoReprodutivo::find($id)->delete();
-
-        $this->dispatch('toast-notification', [
-            'type' => 'sucess',
-            'message' => 'Evento reprodutivo removido!'
-        ]);
+        $this->dispatch('toast-notification', ['message' => 'Evento reprodutivo removido!']);
         $this->animal->refresh();
     }
 
@@ -136,28 +99,17 @@ class ShowAnimal extends Component
     {
         $this->validate(['protocoloSelecionado' => 'required']);
         if (in_array($this->protocoloSelecionado, $this->getProtocolosAplicadosIds())) {
-
-            $this->dispatch('toast-notification', [
-                'type' => 'error',
-                'message' => 'Este protocolo já foi aplicado a este animal.'
-            ]);
+            $this->dispatch('toast-notification', ['type' => 'error', 'message' => 'Este protocolo já foi aplicado.']);
             return;
         }
         $protocolo = ProtocoloSanitario::with('eventos')->find($this->protocoloSelecionado);
-        if (!$protocolo) {
-            return;
-        }
+        if (!$protocolo) return;
 
         foreach ($protocolo->eventos as $evento) {
             $dataAgendada = Carbon::parse($this->animal->data_nascimento)->addDays($evento->dias_apos_inicio);
             $this->animal->agendaSanitaria()->create(['protocolo_evento_id' => $evento->id, 'data_agendada' => $dataAgendada, 'status' => 'Agendado']);
         }
-
-        $this->dispatch('toast-notification', [
-            'type' => 'sucess',
-            'message' => 'Protocolo "' . $protocolo->nome . '" aplicado com sucesso!'
-        ]);
-
+        $this->dispatch('toast-notification', ['message' => 'Protocolo "' . $protocolo->nome . '" aplicado com sucesso!']);
         $this->showAplicarProtocoloModal = false;
         $this->animal->refresh();
     }
@@ -167,43 +119,39 @@ class ShowAnimal extends Component
         $evento = AgendaSanitaria::find($id);
         if ($evento) {
             $evento->update(['status' => 'Concluído', 'data_conclusao' => now()]);
-            $this->animal->movimentacoes()->create([
-                'data' => now(),
-                'tipo' => $evento->protocoloEvento->tipo,
-                'descricao' => 'Conclusão (agendada): ' . $evento->protocoloEvento->nome_evento,
-                'valor' => $evento->protocoloEvento->instrucoes,
-            ]);
-
-            $this->dispatch('toast-notification', [
-                'type' => 'sucess',
-                'message' => 'Evento sanitário concluído!'
-            ]);
+            $this->animal->movimentacoes()->create(['data' => now(), 'tipo' => $evento->protocoloEvento->tipo, 'descricao' => 'Conclusão (agendada): ' . $evento->protocoloEvento->nome_evento, 'valor' => $evento->protocoloEvento->instrucoes]);
+            $this->dispatch('toast-notification', ['message' => 'Evento sanitário concluído!']);
             $this->animal->refresh();
         }
     }
 
     public function salvarMovimentacao()
     {
-        $regras = ['data' => 'required|date', 'tipo' => 'required|string', 'descricao' => 'required|string|min:3'];
+        // Define as regras base
+        $regras = [
+            'data' => 'required|date',
+            'tipo' => 'required|string',
+        ];
+
+        // Adiciona regras específicas para cada tipo de evento
         if ($this->tipo === 'Pesagem') {
             $regras['valor'] = 'required|numeric';
-            $regras['unidade'] = 'required|in:Kg,@';
+            $regras['unidade'] = 'required|in:Kg,@,@ (Peso Vivo),@ (Carcaça)';
+            $regras['descricao'] = 'nullable|string|max:255'; // >> CORREÇÃO: Agora é opcional
         } else {
             $regras['valor'] = 'nullable|string|max:255';
+            $regras['descricao'] = 'required|string|min:3'; // Mantém-se obrigatório para outros eventos
         }
+
         $dadosValidados = $this->validate($regras);
-        if ($this->tipo === 'Pesagem') $dadosValidados['valor'] = $this->valor . ' ' . $this->unidade;
 
-        $this->animal->movimentacoes()->create($dadosValidados);
-        if (in_array($this->tipo, ['Venda', 'Óbito'])) {
-            $this->animal->status = $this->tipo === 'Venda' ? 'Vendido' : 'Óbito';
-            $this->animal->save();
+        // ... (resto da lógica de salvar)
+        if ($this->tipo === 'Pesagem' && !empty($this->valor)) {
+            $dadosValidados['valor'] = $this->valor . ' ' . $this->unidade;
         }
-
-        $this->dispatch('toast-notification', [
-            'type' => 'sucess',
-            'message' => 'Evento registado com sucesso!'
-        ]);
+        $this->animal->movimentacoes()->create($dadosValidados);
+        // ...
+        $this->dispatch('toast-notification', ['type' => 'success', 'message' => 'Evento registado com sucesso!']);
         $this->resetAddForm();
         $this->animal->refresh();
     }
@@ -216,27 +164,54 @@ class ShowAnimal extends Component
         $this->descricaoEdicao = $movimentacao->descricao;
         if ($this->tipoEdicao === 'Pesagem') {
             $partes = explode(' ', $movimentacao->valor);
-            $this->valorEdicao = floatval($partes[0]) ?? null;
+            $this->valorEdicao = floatval($partes[0] ?? null);
             $this->unidadeEdicao = $partes[1] ?? 'Kg';
         } else {
             $this->valorEdicao = $movimentacao->valor;
         }
         $this->showEditModal = true;
     }
+
     public function updateMovimentacao()
     {
-        // ... (código existente)
+        if (!$this->movimentacaoEmEdicao) return;
+
+        // Define as regras base
+        $regras = [
+            'dataEdicao' => 'required|date',
+            'tipoEdicao' => 'required|string',
+        ];
+
+        // Adiciona regras específicas para cada tipo de evento
+        if ($this->tipoEdicao === 'Pesagem') {
+            $regras['valorEdicao'] = 'required|numeric';
+            $regras['unidadeEdicao'] = 'required|in:Kg,@,@ (Peso Vivo),@ (Carcaça)';
+            $regras['descricaoEdicao'] = 'nullable|string|max:255'; // >> CORREÇÃO: Agora é opcional
+        } else {
+            $regras['valorEdicao'] = 'nullable|string|max:255';
+            $regras['descricaoEdicao'] = 'required|string|min:3';
+        }
+
+        $this->validate($regras);
+
+        // ... (resto da lógica de atualizar)
+        $valorFinal = $this->tipoEdicao === 'Pesagem' ? $this->valorEdicao . ' ' . $this->unidadeEdicao : $this->valorEdicao;
+        $this->movimentacaoEmEdicao->update([
+            'data' => $this->dataEdicao,
+            'tipo' => $this->tipoEdicao,
+            'descricao' => $this->descricaoEdicao,
+            'valor' => $valorFinal,
+        ]);
+        // ...
+        $this->dispatch('toast-notification', ['type' => 'success', 'message' => 'Evento atualizado!']);
         $this->showEditModal = false;
         $this->animal->refresh();
     }
+
     public function deleteMovimentacao($movimentacaoId)
     {
         Movimentacao::find($movimentacaoId)->delete();
-
-        $this->dispatch('toast-notification', [
-            'type' => 'sucess',
-            'message' => 'Evento removido!'
-        ]);
+        $this->dispatch('toast-notification', ['message' => 'Evento removido!']);
         $this->animal->refresh();
     }
 
@@ -262,15 +237,31 @@ class ShowAnimal extends Component
     private function prepararDadosGrafico()
     {
         $pesagens = $this->animal->movimentacoes->where('tipo', 'Pesagem')->sortBy('data');
-        $labels = $pesagens->map(fn($item) => Carbon::parse($item->data)->format('d/m/Y'))->values();
+        $labels = $pesagens->map(fn($item) => \Carbon\Carbon::parse($item->data)->format('d/m/Y'))->values();
+
+        // >> LÓGICA DE CONVERSÃO ATUALIZADA <<
         $data = $pesagens->map(function ($item) {
             $partes = explode(' ', $item->valor);
             $valorNumerico = floatval($partes[0] ?? 0);
-            $unidade = $partes[1] ?? 'Kg';
-            return (strtoupper($unidade) === '@') ? $valorNumerico * 15 : $valorNumerico;
+            $unidadeCompleta = trim(implode(' ', array_slice($partes, 1))); // Pega o resto da string como unidade
+
+            switch ($unidadeCompleta) {
+                case '@ (Peso Vivo)':
+                    return $valorNumerico * 30; // 1 @ de peso vivo = 30 kg
+                case '@ (Carcaça)':
+                    return $valorNumerico * 15; // 1 @ de carcaça = 15 kg
+                case '@': // Mantém a compatibilidade com registos antigos
+                    return $valorNumerico * 15;
+                case 'Kg':
+                default:
+                    return $valorNumerico; // Se for Kg ou indefinido, retorna o valor
+            }
         })->values();
 
-        return ['labels' => $labels, 'data' => $data];
+        $chartData = ['labels' => $labels, 'data' => $data];
+        $this->dispatch('update-pesagem-chart', data: $chartData);
+
+        return $chartData;
     }
 
     public function getProtocolosAplicadosIds()
@@ -280,25 +271,73 @@ class ShowAnimal extends Component
             ->get()->pluck('protocoloEvento.protocoloSanitario.id')->unique()->toArray();
     }
 
+    public function getIconeEspecie()
+    {
+        switch (mb_strtolower($this->animal->especie->nome, 'UTF-8')) {
+            case 'bovino':
+            case 'bovinos':
+                return 'fa-cow';
+            case 'ovino':
+            case 'ovinos':
+                return 'fa-sheep';
+            case 'suíno':
+            case 'suínos':
+                return 'fa-piggy-bank';
+            case 'ave':
+            case 'aves':
+                return 'fa-dove';
+            case 'equino':
+            case 'equinos':
+                return 'fa-horse';
+            default:
+                return 'fa-paw';
+        }
+    }
+
     public function getIconeEventoReprodutivo($tipo)
     {
-        // >> CORREÇÃO: Usando mb_strtolower para lidar com caracteres especiais <<
         switch (mb_strtolower($tipo, 'UTF-8')) {
             case 'cobrição':
             case 'inseminação':
                 return 'fa-heart';
             case 'diagnóstico de gestação':
-                return 'fa-search-plus'; // Ícone melhorado
+                return 'fa-search-plus';
             case 'previsão de parto':
                 return 'fa-baby-carriage';
             case 'parto':
                 return 'fa-birthday-cake';
             case 'aborto':
                 return 'fa-times-circle';
+            case 'desmame':
+                return 'fa-baby'; // Corrigido de 'fas fa-baby' para 'fa-baby'
             default:
                 return 'fa-venus-mars';
         }
     }
+
+    /**
+     * NOVO MÉTODO: Obtém a cor de fundo para o ícone do evento reprodutivo.
+     */
+    public function getCorIconeEventoReprodutivo($tipo)
+    {
+        switch (mb_strtolower($tipo, 'UTF-8')) {
+            case 'cobrição':
+            case 'inseminação':
+                return 'bg-pink-500'; // Rosa para eventos de acasalamento
+            case 'diagnóstico de gestação':
+                return 'bg-blue-500'; // Azul para diagnósticos
+            case 'previsão de parto':
+            case 'parto':
+                return 'bg-if-green-500'; // Verde para eventos de nascimento
+            case 'aborto':
+                return 'bg-red-500'; // Vermelho para eventos negativos
+            case 'desmame':
+                return 'bg-yellow-500'; // Amarelo para desmame
+            default:
+                return 'bg-gray-500'; // Cinza como padrão
+        }
+    }
+
     // --- RENDER ---
     public function render()
     {

@@ -50,7 +50,7 @@ class GerenciarAnimais extends Component
             'identificacao' => 'required|string|min:3',
             'data_nascimento' => 'required|date',
             'sexo' => 'required|in:Macho,Fêmea',
-            'status' => 'required|in:Ativo,Vendido,Óbito',
+            'status' => 'required|in:Ativo,Vendido,Óbito,Doação',            
             'observacoes' => 'nullable|string',
         ];
     }
