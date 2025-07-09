@@ -27,7 +27,7 @@ Route::get('/', function () {
 // LINHA NOVA
 
 
-Route::get('/dashboard', Dashboard::class)->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', Dashboard::class)->middleware(['auth'])->name('dashboard');
 
 Route::view('profile', 'profile')
     ->middleware(['auth'])
