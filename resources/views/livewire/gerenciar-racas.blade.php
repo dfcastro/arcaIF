@@ -18,11 +18,10 @@
                             <p class="mt-1 text-sm text-gray-500">Adicione ou edite as raças de cada espécie.</p>
                         </div>
                         <div class="md:text-right">
-                            <button wire:click="abrirModal()" type="button"
-                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-if-green hover:bg-green-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                          <x-primary-button wire:click="abrirModal()">
                                 <i class="fa-solid fa-plus mr-2 -ml-1"></i>
                                 Nova Raça
-                            </button>
+                            <x-primary-button>
                         </div>
                     </div>
 
