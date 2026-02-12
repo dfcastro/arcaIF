@@ -3,21 +3,22 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash; // Importante para a senha
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // Cria o usuário Admin
+        User::create([
+            'name' => 'Administrador',
+            'email' => 'admin@arcaif.com',
+            'password' => Hash::make('Yirq3008!'), // Defina a senha aqui
+            'role' => 'administrador', // Defina o papel como 'admin'
         ]);
+
+        // (Opcional) Cria usuários de teste adicionais
+        // User::factory(10)->create();
     }
 }

@@ -65,7 +65,7 @@ new class extends Component
                 <x-input-error :messages="$errors->get('password')" class="mt-2" />
             </div>
 
-            <div class="mt-6 flex justify-end">
+            {{-- <div class="mt-6 flex justify-end">
                 <x-secondary-button x-on:click="$dispatch('close')">
                     {{ __('Cancel') }}
                 </x-secondary-button>
@@ -73,7 +73,7 @@ new class extends Component
                 <x-danger-button class="ms-3">
                     {{ __('Delete Account') }}
                 </x-danger-button>
-            </div>
+            </div> --}}
         </form>
     </x-modal>
 </section>

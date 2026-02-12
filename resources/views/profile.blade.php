@@ -24,14 +24,14 @@
             </div>
             
             {{-- Apenas utilizadores que não são administradores podem apagar a própria conta --}}
-            @unless(auth()->user()->role === 'administrador')
+            {{-- @unless(auth()->user()->role === 'administrador')
                 <div class="p-4 sm:p-8 bg-white shadow-sm sm:rounded-lg">
                     <div class="max-w-xl">
-                        {{-- CORREÇÃO: Removido o 'pages.' do caminho do componente --}}
+                        
                         <livewire:profile.delete-user-form />
                     </div>
                 </div>
-            @endunless
+            @endunless --}}
         </div>
     </div>
 </x-app-layout>

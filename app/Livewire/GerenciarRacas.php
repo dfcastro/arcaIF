@@ -24,7 +24,7 @@ class GerenciarRacas extends Component
     public $modalDelecaoAberto = false;
     public $racaParaDeletar;
     // << FIM DAS NOVAS PROPRIEDADES
-
+    public $search = '';
     // ... (O seu método rules() e messages continuam aqui) ...
     protected function rules()
     {
@@ -141,8 +141,21 @@ class GerenciarRacas extends Component
 
     public function render()
     {
+        // 3. Atualize a consulta no método render
+        $racas = Raca::with('especie')
+            ->where(function ($query) {
+                // Busca pelo nome da Raça
+                $query->where('nome', 'like', '%' . $this->search . '%')
+                    // OU busca pelo nome da Espécie relacionada
+                    ->orWhereHas('especie', function ($q) {
+                        $q->where('nome', 'like', '%' . $this->search . '%');
+                    });
+            })
+            ->orderBy('nome')
+            ->paginate(10);
+
         return view('livewire.gerenciar-racas', [
-            'racas' => Raca::with('especie')->orderBy('nome')->paginate(10),
+            'racas' => $racas,
             'especies' => Especie::orderBy('nome')->get(),
         ])->layout('layouts.app');
     }
