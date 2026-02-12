@@ -20,7 +20,7 @@ class GerenciarEspecies extends Component
     // Propriedades para o modal de exclusão
     public $modalDelecaoAberto = false;
     public $especieParaDeletar;
-
+    public $search = '';
     protected function rules()
     {
         return [
@@ -105,7 +105,13 @@ class GerenciarEspecies extends Component
 
     public function render()
     {
-        $especies = Especie::orderBy('nome')->paginate(10);
-        return view('livewire.gerenciar-especies', ['especies' => $especies])->layout('layouts.app');
+        // 3. ATUALIZE: O método render com o filtro
+        $especies = Especie::where('nome', 'like', '%' . $this->search . '%')
+            ->orderBy('nome')
+            ->paginate(10);
+
+        return view('livewire.gerenciar-especies', [
+            'especies' => $especies,
+        ])->layout('layouts.app');
     }
 }
