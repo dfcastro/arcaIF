@@ -138,7 +138,11 @@ class GerenciarRacas extends Component
         $this->modalDelecaoAberto = false; // Fecha o modal
     }
     // << FIM DOS NOVOS MÉTODOS
-
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+    
     public function render()
     {
         // 3. Atualize a consulta no método render

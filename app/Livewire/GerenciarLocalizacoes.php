@@ -21,6 +21,7 @@ class GerenciarLocalizacoes extends Component
     // Propriedades para o modal de exclusão
     public $modalDelecaoAberto = false;
     public $localizacaoParaDeletar;
+    public $search = '';
 
     protected function rules()
     {
@@ -28,6 +29,11 @@ class GerenciarLocalizacoes extends Component
             'nome' => ['required', 'string', 'min:3', Rule::unique('localizacoes')->ignore($this->localizacaoId)],
             'descricao' => 'nullable|string|max:255',
         ];
+    }
+
+    public function updatingSearch()
+    {
+        $this->resetPage();
     }
 
     public function abrirModal()
@@ -54,7 +60,7 @@ class GerenciarLocalizacoes extends Component
             'nome' => $this->nome,
             'descricao' => $this->descricao,
         ]);
-       $this->dispatch('toast-notification', [
+        $this->dispatch('toast-notification', [
             'type' => 'success',
             'message' => $this->localizacaoId ? 'Localização atualizada com sucesso!' : 'Localização cadastrada com sucesso!'
         ]);
@@ -77,7 +83,7 @@ class GerenciarLocalizacoes extends Component
         $this->modalDelecaoAberto = true;
     }
 
-   public function deletar()
+    public function deletar()
     {
         if (!$this->localizacaoParaDeletar) {
             return;
@@ -108,8 +114,17 @@ class GerenciarLocalizacoes extends Component
 
     public function render()
     {
+        // 3. ATUALIZE: O método render com o filtro
+        $localizacoes = Localizacao::withCount('animais')
+            ->where(function ($query) {
+                $query->where('nome', 'like', '%' . $this->search . '%')
+                    ->orWhere('descricao', 'like', '%' . $this->search . '%');
+            })
+            ->orderBy('nome')
+            ->paginate(10);
+
         return view('livewire.gerenciar-localizacoes', [
-            'localizacoes' => Localizacao::withCount('animais')->orderBy('nome')->paginate(10),
+            'localizacoes' => $localizacoes,
         ])->layout('layouts.app');
     }
 }

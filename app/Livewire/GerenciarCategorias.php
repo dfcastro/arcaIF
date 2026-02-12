@@ -30,7 +30,7 @@ class GerenciarCategorias extends Component
     public $modalAberto = false;
     public $modalDelecaoAberto = false;
     public $categoriaParaDeletar;
-
+    public $search = '';
     protected function rules()
     {
         return [
@@ -40,6 +40,10 @@ class GerenciarCategorias extends Component
             'consumo_diario_kg' => 'required|numeric|min:0',
             'descricao' => 'nullable|string',
         ];
+    }
+    public function updatingSearch()
+    {
+        $this->resetPage();
     }
 
     public function mount()
@@ -140,8 +144,25 @@ class GerenciarCategorias extends Component
 
     public function render()
     {
+        // 3. ATUALIZE: O método render com a consulta filtrada
+        $categorias = CategoriaAnimal::with(['especie', 'formulaRacao'])
+            ->where(function ($query) {
+                // Busca pelo nome da Categoria
+                $query->where('nome', 'like', '%' . $this->search . '%')
+                    // OU busca pelo nome da Espécie relacionada
+                    ->orWhereHas('especie', function ($q) {
+                        $q->where('nome', 'like', '%' . $this->search . '%');
+                    })
+                    // OU busca pelo nome da Fórmula de Ração relacionada
+                    ->orWhereHas('formulaRacao', function ($q) {
+                        $q->where('nome_formula', 'like', '%' . $this->search . '%');
+                    });
+            })
+            ->orderBy('nome')
+            ->paginate(10);
+
         return view('livewire.gerenciar-categorias', [
-            'categorias' => CategoriaAnimal::with('especie', 'formulaRacao')->orderBy('nome')->paginate(10),
+            'categorias' => $categorias,
         ])->layout('layouts.app');
     }
 }

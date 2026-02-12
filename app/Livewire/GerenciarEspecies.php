@@ -102,10 +102,14 @@ class GerenciarEspecies extends Component
 
         $this->modalDelecaoAberto = false;
     }
-
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+    
     public function render()
     {
-        // 3. ATUALIZE: O método render com o filtro
+
         $especies = Especie::where('nome', 'like', '%' . $this->search . '%')
             ->orderBy('nome')
             ->paginate(10);
